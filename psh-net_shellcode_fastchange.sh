@@ -15,7 +15,6 @@ ListenerIP=192.168.114.26
 ListenerPort=443
 ListenerURI="/logout/"
 ProxyType=HTTP
-#HttpProxyIE=true
 ProxyHost=""
 ProxyPort=""
 ProxyUser=""
