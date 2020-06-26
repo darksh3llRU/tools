@@ -1,7 +1,7 @@
 #!/bin/bash
 # shellcode replacement stuff
 # meterpreter PSH-NET payload combined with hta-psh web delivery method
-# darksh3llRU beta v1.0, last update 25.06.2020
+# darksh3llRU beta v1.0, last update 26.06.2020
 # before you start comment and uncomment correct payload to use and options to be used
 # staged payload doesnt really support proxy, second stage will not arrive via proxy it require msf template changes
 # stageless payload are splitted as you want, junk is random, but places where to put junk can be extended
