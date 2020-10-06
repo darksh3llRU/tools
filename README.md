@@ -7,3 +7,6 @@ portscan_netcat.bash -> dumb port scanner used to scan networks behind a comprom
 
 
 psh-net_shellcode_fastchange.sh -> psh-net shellcode extraction and replace. Combined with hta-psh.
+
+
+psh-net -> psh-net shellcode extraction and replace, payload generation, obfuscation and at the hta-psh payload.
