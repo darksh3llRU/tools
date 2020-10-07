@@ -154,7 +154,7 @@ def change_payload(payload_filename):
     try:
         chunk_size = int(input("Enter chunk_size to split base64 encoded stager(50-1500),\n recommended 65-80 for staged meterpreter and 1200-1500 for stageless: "))
     except ValueError:
-       print("Not a valid chunk_size entered, assigning default value is 200")
+       print("Not a valid chunk_size entered, assigning default value 200")
        chunk_size = 200
     if chunk_size in range(49,1501):
         pass
