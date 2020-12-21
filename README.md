@@ -10,3 +10,6 @@ psh-net_shellcode_fastchange.sh -> psh-net shellcode extraction and replace. Com
 
 
 psh-net -> psh-net shellcode extraction and replace, payload generation, obfuscation and at the hta-psh payload.
+
+
+port_scan3.py -> python3 script for tcp port scanning and saving results to a file
